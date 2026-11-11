@@ -461,7 +461,7 @@
 <script type="application/json" id="config-pagina">
 {
   "WHATSAPP_GROUP_URL": "https://chat.whatsapp.com/DgaT2Y96CZeJ0IRUCBZT7F?mode=gi_t",
-  "REDIRECT_DELAY": 10,
+  "REDIRECT_DELAY": 0,
   "EVENT_DATE": "2026-11-25T08:00:00-03:00",
   "TEAM_INVITE": "Time, vamos participar juntos do Café com Vendas: live gratuita sobre Buyer Enablement, como transformar interesse em decisão. Quarta, 25/11, das 8h às 11h, no Zoom. Cada um faz o cadastro aqui:"
 }
@@ -469,7 +469,7 @@
 
 <script>
 const CONFIG = Object.assign(
-  { WHATSAPP_GROUP_URL: "", REDIRECT_DELAY: 10, EVENT_DATE: "", TEAM_INVITE: "" },
+  { WHATSAPP_GROUP_URL: "", REDIRECT_DELAY: 0, EVENT_DATE: "", TEAM_INVITE: "" },
   (function () { try { return JSON.parse(document.getElementById("config-pagina").textContent); } catch (e) { return {}; } })(),
   { PAGE_URL: location.href.split("?")[0] }
 );
