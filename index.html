@@ -512,9 +512,84 @@ const CONFIG = Object.assign(
     mostrarConfirmacao(nomeDigitado);
   }
 
+  // Máscara do WhatsApp: +55 (61) 91234-5678. Aceita só números, no máximo
+  // 13 dígitos (país + DDD + 9 dígitos). Se a pessoa começar pelo DDD, sem o
+  // 55, o código do Brasil entra sozinho. No envio vai como +5561912345678.
+  const MAX_DIGITOS = 13;
+  function digitosTelefone(v) {
+    let d = String(v || "").replace(/\D/g, "");
+    if (d && d[0] !== "5") d = "55" + d;
+    return d.slice(0, MAX_DIGITOS);
+  }
+  function formatarTelefone(d) {
+    if (!d) return "";
+    let s = "+" + d.slice(0, 2);
+    if (d.length > 2) s += " (" + d.slice(2, 4);
+    if (d.length > 4) s += ") ";
+    const resto = d.slice(4);
+    // Fixo (8 dígitos) fica 1234-5678; celular (9 dígitos) fica 91234-5678.
+    const corte = resto.length > 8 ? 5 : 4;
+    s += resto.length > corte ? resto.slice(0, corte) + "-" + resto.slice(corte) : resto;
+    return s;
+  }
+  function mascararTelefone(campo) {
+    if (campo.dataset.mascara) return;
+    campo.dataset.mascara = "1";
+    campo.placeholder = "+55 (61) 91234-5678";
+    campo.setAttribute("autocomplete", "tel");
+    campo.setAttribute("maxlength", "19");
+
+    const validar = () => {
+      const n = digitosTelefone(campo.value).length;
+      campo.setCustomValidity(n > 0 && n < 12 ? "Digite o WhatsApp completo, com DDD." : "");
+    };
+
+    let apagouSeparador = false;
+    campo.addEventListener("beforeinput", (e) => {
+      // Backspace em cima de "(", ")", " " ou "-": apaga o número anterior.
+      const pos = campo.selectionStart;
+      apagouSeparador = e.inputType === "deleteContentBackward" &&
+        pos === campo.selectionEnd && pos > 0 && /\D/.test(campo.value[pos - 1]);
+    });
+
+    campo.addEventListener("input", () => {
+      const v = campo.value;
+      let pos = campo.selectionStart == null ? v.length : campo.selectionStart;
+      let antes = v.slice(0, pos).replace(/\D/g, "").length;
+      let d = v.replace(/\D/g, "");
+      if (apagouSeparador && antes > 0) {
+        d = d.slice(0, antes - 1) + d.slice(antes);
+        antes--;
+      }
+      apagouSeparador = false;
+      const completo = digitosTelefone(d);
+      if (d && d[0] !== "5") antes += 2; // o 55 entrou na frente
+      const novo = formatarTelefone(completo);
+      campo.value = novo;
+      // Recoloca o cursor logo depois do mesmo número em que estava.
+      let p = 0, vistos = 0;
+      while (p < novo.length && vistos < antes) { if (/\d/.test(novo[p])) vistos++; p++; }
+      if (document.activeElement === campo) campo.setSelectionRange(p, p);
+      validar();
+    });
+
+    campo.form.addEventListener("submit", () => {
+      const d = digitosTelefone(campo.value);
+      if (!d) return;
+      // O embed lê os valores logo em seguida, no mesmo evento.
+      campo.value = "+" + d;
+      setTimeout(() => { if (campo.isConnected) campo.value = formatarTelefone(d); }, 0);
+    }, true);
+
+    if (campo.value) campo.value = formatarTelefone(digitosTelefone(campo.value));
+    validar();
+  }
+
   function ajustarEmbed() {
     const f = form.querySelector("[data-conversion-hub-form] form");
     if (!f) return;
+    const tel = f.querySelector('input[name="phone"]');
+    if (tel) mascararTelefone(tel);
     const b = f.querySelector('button[type="submit"]');
     if (!b) { sucesso(); return; }
     if (!b.disabled && b.textContent !== TEXTO_BOTAO) b.textContent = TEXTO_BOTAO;
